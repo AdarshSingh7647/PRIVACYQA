@@ -38,7 +38,7 @@ MODEL_NAME="meta-llama/Llama-3.3-70B-Instruct"
 # Run papermill
 echo "Running papermill with MODEL_NAME: $MODEL_NAME"
 papermill /scratch/asing725/CSE336/privacy_qa/final_all_batch.ipynb \
-    /scratch/asing725/CSE336/privacy_qa/batch_results/final_all_batch_llama_70b.ipynb \
+    /scratch/asing725/CSE336/privacy_qa/batch_results/final_all_batch_llama3.3_70b.ipynb \
     -p MODEL_NAME "$MODEL_NAME" -p NUM_GPUS 4
 
 # Print completion information
