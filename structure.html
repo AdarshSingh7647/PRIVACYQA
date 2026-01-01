@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Table QA Pipeline - Complete Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        /* Global Config Section */
+        .config-section {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 3px solid #f39c12;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+        
+        .config-title {
+            font-size: 1.8em;
+            color: #2d3748;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .config-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .config-item-title {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .config-code {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 8px;
+            overflow-x: auto;
+        }
+        
+        .config-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .option-badge {
+            background: #667eea;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        /* Setup Container */
+        .setup-container {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .setup {
+            flex: 1;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            padding: 30px;
+            background: #f7fafc;
+        }
+        
+        .setup h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+        
+        .flow-step {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .flow-step::after {
+            content: '↓';
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .flow-step:last-child::after {
+            content: '';
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            font-size: 1.2em;
+            color: #2d3748;
+        }
+        
+        .step-content {
+            margin-left: 42px;
+        }
+        
+        .subsection {
+            margin-top: 10px;
+            padding-left: 15px;
+            border-left: 3px solid #e2e8f0;
+        }
+        
+        .subsection-title {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        
+        .code-inline {
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #2d3748;
+        }
+        
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        ul li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        ul li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .highlight-box {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+        
+        .storage-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+        
+        .reranker-highlight {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+        
+        .k-values {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .k-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        /* Output Schema */
+        .output-schema {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            margin-top: 10px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        
+        .schema-key {
+            color: #90cdf4;
+        }
+        
+        .schema-type {
+            color: #f6ad55;
+        }
+        
+        .schema-comment {
+            color: #68d391;
+        }
+        
+        .legend {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .legend h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+        
+        .required-columns {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 RAG Table QA Pipeline - Complete Implementation</h1>
+        
+        <!-- GLOBAL CONFIGURATION -->
+        <div class="config-section">
+            <div class="config-title">⚙️ GLOBAL CONFIGURATION & RUNTIME SETTINGS</div>
+            <div class="config-grid">
+                <div class="config-item">
+                    <div class="config-item-title">📂 Input/Output Paths</div>
+                    <div class="config-code">INPUT_CSV = "path/to/questions.csv"
+TABLE_CSV_BASE_DIR = "path/to/tables/"
+PROMPTS_DIR = "path/to/prompts/"
+OUTPUT_DIR = "path/to/outputs/"</div>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-item-title">🤖 LLM Models Configuration</div>
+                    <div class="config-code">LLM_MODELS = [
+  {
+    "model_id": "model_name",
+    "local_path": "/path/to/model",
+    "enabled": True
+  },
+  ...
+]</div>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-item-title">🎯 Generation Parameters</div>
+                    <div class="config-code">MAX_NEW_TOKENS = 512
+TEMPERATURE = 0.7
+TOP_K_VALUES = [1, 3, 5, 10]</div>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-item-title">🔢 Model Settings</div>
+                    <div class="config-code">device_map = "auto"
+torch_dtype = bfloat16
+low_cpu_mem_usage = True
+batch_size = 8</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="setup-container">
+            <!-- SETUP 1 -->
+            <div class="setup">
+                <h2>🔷 Setup 1: Baseline RAG</h2>
+                
+                <!-- STEP 0: VERIFY MODELS -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">0</div>
+                        <div class="step-title">VERIFY LLM MODELS</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Check for config.json and weight files</li>
+                                <li>Verify all enabled models exist</li>
+                                <li>Abort with instructions if missing</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">verify_all_models(llm_configs)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="error-box">
+                            <strong>⚠️ Error Handling:</strong> If any enabled model is missing, abort execution with instructions to run <span class="code-inline">snapshot_download(...)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 1: LOAD QUESTIONS -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">LOAD QUESTIONS CSV</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Read questions from INPUT_CSV</li>
+                                <li>Add csv_file_full_path for each question</li>
+                                <li>Validate required columns exist</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">load_questions(INPUT_CSV, TABLE_CSV_BASE_DIR)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="required-columns">
+                            <strong>📋 Required CSV Columns (MUST exist):</strong>
+                            <ul style="margin-top: 10px;">
+                                <li><span class="code-inline">question_natural</span> - The question text</li>
+                                <li><span class="code-inline">csv_file</span> - Filename of table CSV</li>
+                                <li><span class="code-inline">base_question_id</span> - Question identifier</li>
+                                <li><span class="code-inline">instance_id</span> - Instance identifier</li>
+                                <li><span class="code-inline">format_instructions</span> - Desired JSON format</li>
+                                <li><span class="code-inline">datapoint_context</span> - Optional context (can be empty)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output:</div>
+                            <ul>
+                                <li>DataFrame with all columns + <span class="code-inline">csv_file_full_path</span></li>
+                                <li>Path computed as: <span class="code-inline">os.path.join(TABLE_CSV_BASE_DIR, csv_file)</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 2: LOAD TABLES -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">LOAD TABLES FROM CSV</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Load table CSV file for current question</li>
+                                <li>Each row in CSV = one table</li>
+                                <li>Convert each row to one-row DataFrame</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">load_tables_from_csv(csv_file_full_path)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📥 Input:</div>
+                            <ul>
+                                <li>csv_file_full_path from question row</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output:</div>
+                            <ul>
+                                <li><span class="code-inline">List[pd.DataFrame]</span> - Each DataFrame is one row/table</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 3: SERIALIZE & ENCODE -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title">SERIALIZE & ENCODE TABLES</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Serialize each table to text format</li>
+                                <li>Encode tables to embeddings in batch</li>
+                                <li>Store embeddings in retriever</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Functions:</div>
+                            <ul>
+                                <li><span class="code-inline">serialize_table(table_df)</span> - Convert to "ColumnName: value, ..." format per row</li>
+                                <li><span class="code-inline">retriever.encode_tables(tables, batch_size)</span> - Generate embeddings</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output:</div>
+                            <ul>
+                                <li>table_embeddings stored inside retriever object</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="highlight-box">
+                            <strong>📝 Serialization Format:</strong><br>
+                            Each row: "Column1: val1, Column2: val2, Column3: val3, ..."
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 4: RETRIEVE -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">4</div>
+                        <div class="step-title">RETRIEVE TOP-K TABLES</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Retrieve top max_k tables (highest k value)</li>
+                                <li>For each k in TOP_K_VALUES, extract top-k subset</li>
+                                <li>Store indices, scores, and table DataFrames</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">retriever.retrieve_top_k(question, max_k)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📥 Input:</div>
+                            <ul>
+                                <li>question (from question_natural column)</li>
+                                <li>max_k (max value from TOP_K_VALUES)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output:</div>
+                            <ul>
+                                <li><span class="code-inline">List[(table_index, score, table_df)]</span></li>
+                                <li>Extract: top_k_table_indices, top_k_scores, top_k_tables</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="k-values">
+                            <span class="k-badge">k=1</span>
+                            <span class="k-badge">k=3</span>
+                            <span class="k-badge">k=5</span>
+                            <span class="k-badge">k=10</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 5: BUILD PROMPTS -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">5</div>
+                        <div class="step-title">BUILD PROMPTS</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Format prompt with question, tables, instructions, context</li>
+                                <li>Generate prompts for all k values</li>
+                                <li>Create prompt dictionaries with metadata</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Functions:</div>
+                            <ul>
+                                <li><span class="code-inline">format_qa_prompt(question, top_k_tables, format_instructions, datapoint_context, instance_id)</span></li>
+                                <li><span class="code-inline">generate_all_prompts(...)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📥 Input:</div>
+                            <ul>
+                                <li>question (question_natural)</li>
+                                <li>top_k_tables (retrieved tables)</li>
+                                <li>format_instructions (from CSV)</li>
+                                <li>datapoint_context (from CSV, optional)</li>
+                                <li>instance_id (from CSV)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output - Prompt Dict Keys:</div>
+                            <ul>
+                                <li><span class="code-inline">base_question_id</span></li>
+                                <li><span class="code-inline">instance_id</span></li>
+                                <li><span class="code-inline">question</span></li>
+                                <li><span class="code-inline">question_natural</span></li>
+                                <li><span class="code-inline">csv_file</span></li>
+                                <li><span class="code-inline">k_value</span></li>
+                                <li><span class="code-inline">top_k_table_indices</span></li>
+                                <li><span class="code-inline">top_k_scores</span></li>
+                                <li><span class="code-inline">prompt</span> (formatted text)</li>
+                                <li><span class="code-inline">format_instructions</span></li>
+                                <li><span class="code-inline">datapoint_context</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="highlight-box">
+                            <strong>💬 Prompt includes:</strong><br>
+                            Question + Format Instructions + Context + Serialized Tables<br>
+                            <strong>⚠️ Enforces JSON-only output via format_instructions</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 6: SAVE PROMPTS -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">6</div>
+                        <div class="step-title">SAVE PROMPTS</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Functions:</div>
+                            <ul>
+                                <li><span class="code-inline">save_prompts(prompts, k_value, PROMPTS_DIR)</span></li>
+                                <li><span class="code-inline">save_combined_prompts_for_model(...)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="storage-box">
+                            <strong>💾 SAVED FILES:</strong><br>
+                            <strong>Per K-value:</strong> <span class="code-inline">prompts_k{k}.json</span><br>
+                            <strong>Combined (all K):</strong> <span class="code-inline">prompts_combined_{timestamp}.json</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 7: LOAD MODEL -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">7</div>
+                        <div class="step-title">SEQUENTIAL MODEL LOOP - LOAD MODEL</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>For each enabled LLM in LLM_MODELS</li>
+                                <li>Load tokenizer from local_path</li>
+                                <li>Set left padding, configure pad_token</li>
+                                <li>Load model with specified parameters</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Class/Function:</div>
+                            <ul>
+                                <li><span class="code-inline">SequentialModelInference(config)</span></li>
+                                <li><span class="code-inline">load_model()</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Model Loading Parameters:</div>
+                            <ul>
+                                <li>device_map="auto"</li>
+                                <li>torch_dtype=bfloat16</li>
+                                <li>low_cpu_mem_usage=True</li>
+                                <li>Left padding enabled</li>
+                                <li>pad_token set if missing</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 8: BATCH INFERENCE -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">8</div>
+                        <div class="step-title">BATCH INFERENCE PER K-VALUE</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task (for each k_value):</div>
+                            <ul>
+                                <li>Load prompts_data = all_prompts["k{k_value}"]</li>
+                                <li>Tokenize using apply_chat_template (instruct/chat models)</li>
+                                <li>Compute prompt_token_counts from attention_mask</li>
+                                <li>Move inputs to model device</li>
+                                <li>Generate with model.generate()</li>
+                                <li>Decode only generated portion (skip prompt tokens)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">run_inference_all(prompts_data, batch_size)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Generation Parameters:</div>
+                            <ul>
+                                <li>max_new_tokens=MAX_NEW_TOKENS</li>
+                                <li>temperature=TEMPERATURE</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output per prompt:</div>
+                            <ul>
+                                <li><span class="code-inline">answer</span> (decoded generated text only)</li>
+                                <li><span class="code-inline">prompt_token_count</span></li>
+                                <li><span class="code-inline">answer_token_count</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 9: SAVE RESULTS -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">9</div>
+                        <div class="step-title">SAVE PER-CONFIG RESULTS</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">save_model_results(results, model_name, k_value, OUTPUT_DIR)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="storage-box">
+                            <strong>💾 SAVED FILE:</strong> <span class="code-inline">results_{model_name}_k{k}.json</span>
+                            <div class="output-schema">{
+  <span class="schema-key">"question_id"</span>: <span class="schema-type">str</span>,           <span class="schema-comment">// base_question_id</span>
+  <span class="schema-key">"instance_id"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"question"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"csv_file"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"k_value"</span>: <span class="schema-type">int</span>,
+  <span class="schema-key">"top_k_table_indices"</span>: <span class="schema-type">List[int]</span>,
+  <span class="schema-key">"top_k_scores"</span>: <span class="schema-type">List[float]</span>,
+  <span class="schema-key">"answer"</span>: <span class="schema-type">str</span>,                <span class="schema-comment">// Generated text</span>
+  <span class="schema-key">"prompt_token_count"</span>: <span class="schema-type">int</span>,
+  <span class="schema-key">"answer_token_count"</span>: <span class="schema-type">int</span>,
+  <span class="schema-key">"timestamp"</span>: <span class="schema-type">str</span>
+}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 10: PER-MODEL JSONL -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">10</div>
+                        <div class="step-title">PER-MODEL AGGREGATION & JSONL</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Collect per-question outputs across all k values</li>
+                                <li>Create mapping: model_results_by_q</li>
+                                <li>Write one JSON object per line (JSONL format)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="storage-box">
+                            <strong>💾 SAVED FILE:</strong> <span class="code-inline">answers_{model_name}.jsonl</span><br>
+                            <strong>Format:</strong> One JSON object per line
+                            <div class="output-schema">{
+  <span class="schema-key">"base_question_id"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"instance_id"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"question_natural"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"model_name"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"retrieval_model"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"outputs"</span>: {
+    <span class="schema-key">"k1"</span>: {
+      <span class="schema-key">"answer_raw"</span>: <span class="schema-type">str</span>,
+      <span class="schema-key">"answer_json"</span>: <span class="schema-type">dict | null</span>,  <span class="schema-comment">// from try_parse_json_from_text</span>
+      <span class="schema-key">"top_k_table_indices"</span>: <span class="schema-type">List[int]</span>,
+      <span class="schema-key">"top_k_scores"</span>: <span class="schema-type">List[float]</span>,
+      <span class="schema-key">"prompt_token_count"</span>: <span class="schema-type">int</span>,
+      <span class="schema-key">"answer_token_count"</span>: <span class="schema-type">int</span>
+    },
+    <span class="schema-key">"k3"</span>: {...},
+    <span class="schema-key">"k5"</span>: {...},
+    <span class="schema-key">"k10"</span>: {...}
+  }
+}</div>
+                        </div>
+                        
+                        <div class="highlight-box">
+                            <strong>🔧 JSON Parsing:</strong> <span class="code-inline">try_parse_json_from_text</span> tries:<br>
+                            1. Direct JSON load<br>
+                            2. Find first {...} region and parse
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 11: UNLOAD MODEL -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">11</div>
+                        <div class="step-title">UNLOAD MODEL</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Delete model and tokenizer objects</li>
+                                <li>Run garbage collection</li>
+                                <li>Clear CUDA cache</li>
+                                <li>Loop back to load next model</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">unload_model()</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">🔧 Operations:</div>
+                            <ul>
+                                <li>del model, del tokenizer</li>
+                                <li>gc.collect()</li>
+                                <li>torch.cuda.empty_cache()</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 12: AGGREGATE -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">12</div>
+                        <div class="step-title">AGGREGATE RESULTS ACROSS MODELS</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Scan all results_*.json files</li>
+                                <li>Group by model and k-value (model_k)</li>
+                                <li>Create unified aggregation file</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">aggregate_results(OUTPUT_DIR)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="storage-box">
+                            <strong>💾 SAVED FILE:</strong> <span class="code-inline">aggregated_results_{timestamp}.json</span>
+                            <div class="output-schema">{
+  <span class="schema-key">"question_id"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"question"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"csv_file"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"model_k_answers"</span>: {
+    <span class="schema-key">"{model_name}_k{k}"</span>: {
+      <span class="schema-key">"answer"</span>: <span class="schema-type">str</span>,
+      <span class="schema-key">"top_k_table_indices"</span>: <span class="schema-type">List[int]</span>,
+      <span class="schema-key">"top_k_scores"</span>: <span class="schema-type">List[float]</span>,
+      <span class="schema-key">"k_value"</span>: <span class="schema-type">int</span>
+    },
+    ...
+  }
+}</div>
+                        </div>
+                        
+                        <div class="highlight-box">
+                            <strong>📊 Aggregation Key Format:</strong> <span class="code-inline">{model_name}_k{k}</span><br>
+                            Example: "llama3_k5", "gpt4_k10"
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SETUP 2 -->
+            <div class="setup">
+                <h2>🔶 Setup 2: RAG + Cross-Encoder Reranking</h2>
+                
+                <div class="highlight-box reranker-highlight">
+                    <strong>✨ KEY DIFFERENCE:</strong> This setup adds a Cross-Encoder Reranking step after retrieval (Step 4) and before prompt building (Step 5). All other steps remain identical to Setup 1.
+                </div>
+                
+                <!-- Note about identical steps -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">0-4</div>
+                        <div class="step-title">STEPS 0-4: IDENTICAL TO SETUP 1</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">📋 Same Steps:</div>
+                            <ul>
+                                <li>0. Verify LLM Models</li>
+                                <li>1. Load Questions CSV</li>
+                                <li>2. Load Tables from CSV</li>
+                                <li>3. Serialize & Encode Tables</li>
+                                <li>4. Retrieve Top-K Tables</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEP 4.5: RERANKER (NEW) -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">4.5</div>
+                        <div class="step-title">CROSS-ENCODER RERANKER (NEW STEP)</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">🎯 Task:</div>
+                            <ul>
+                                <li>Score each (query, table) pair jointly</li>
+                                <li>Re-rank retrieved tables by cross-encoder scores</li>
+                                <li>Return top-k reranked tables for each k value</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">⚙️ Function:</div>
+                            <ul>
+                                <li><span class="code-inline">rerank_tables(question_id, query, retrieved_results, k)</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📥 Input:</div>
+                            <ul>
+                                <li>Question ID</li>
+                                <li>Original query (question_natural)</li>
+                                <li>Retrieved results from Step 4</li>
+                                <li>Cross-encoder model</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="subsection">
+                            <div class="subsection-title">📤 Output:</div>
+                            <ul>
+                                <li>Reranked top_k_table_indices (for each k)</li>
+                                <li>Reranking scores (cross-encoder scores)</li>
+                                <li>Reranked top_k_tables (DataFrame objects)</li>
+                                <li>Maintains original retrieval scores for comparison</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="storage-box">
+                            <strong>💾 OPTIONAL: Save Reranking Comparison</strong>
+                            <div class="output-schema">{
+  <span class="schema-key">"question_id"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"question"</span>: <span class="schema-type">str</span>,
+  <span class="schema-key">"k"</span>: <span class="schema-type">int</span>,
+  <span class="schema-key">"initial_table_indices"</span>: <span class="schema-type">List[int]</span>,    <span class="schema-comment">// Original order</span>
+  <span class="schema-key">"initial_retrieval_scores"</span>: <span class="schema-type">List[float]</span>, <span class="schema-comment">// Original scores</span>
+  <span class="schema-key">"reranked_table_indices"</span>: <span class="schema-type">List[int]</span>,   <span class="schema-comment">// After reranking</span>
+  <span class="schema-key">"reranking_scores"</span>: <span class="schema-type">List[float]</span>      <span class="schema-comment">// Cross-encoder scores</span>
+}</div>
+                            <p style="margin-top: 10px;">File: <span class="code-inline">reranking_comparison_k{k}.json</span> (optional)</p>
+                        </div>
+                        
+                        <div class="highlight-box reranker-highlight">
+                            <strong>🎯 Impact:</strong> Reranked tables replace original retrieval order in all subsequent steps (prompt building, generation, outputs)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEPS 5-12 -->
+                <div class="flow-step">
+                    <div class="step-header">
+                        <div class="step-number">5-12</div>
+                        <div class="step-title">STEPS 5-12: IDENTICAL TO SETUP 1</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="subsection">
+                            <div class="subsection-title">📋 Same Steps (using reranked tables):</div>
+                            <ul>
+                                <li>5. Build Prompts (with reranked tables)</li>
+                                <li>6. Save Prompts</li>
+                                <li>7. Load Model</li>
+                                <li>8. Batch Inference Per K-Value</li>
+                                <li>9. Save Per-Config Results</li>
+                                <li>10. Per-Model Aggregation & JSONL</li>
+                                <li>11. Unload Model</li>
+                                <li>12. Aggregate Results Across Models</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="highlight-box">
+                            <strong>📁 Output Files:</strong> Same naming convention with setup identifier<br>
+                            • Prompts: <span class="code-inline">prompts_setup2_k{k}.json</span><br>
+                            • Results: <span class="code-inline">results_setup2_{model_name}_k{k}.json</span><br>
+                            • JSONL: <span class="code-inline">answers_setup2_{model_name}.jsonl</span><br>
+                            • Aggregated: <span class="code-inline">aggregated_results_setup2_{timestamp}.json</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- LEGEND -->
+        <div class="legend">
+            <h3>📋 Implementation Notes & Key Details</h3>
+            
+            <div class="legend-item">
+                <strong>🎛️ Configuration Control:</strong>
+                <span>All paths are placeholders in config. Adjust NUM_QUESTIONS, enable/disable setups via flags.</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>📊 CSV Structure:</strong>
+                <span>Questions CSV contains 6 required columns. Table CSV has each row = one table (converted to one-row DataFrames).</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>🔢 Token Counting:</strong>
+                <span>prompt_token_count computed from attention_mask. answer_token_count from generated tokens only (prompt excluded).</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>🔄 Model Management:</strong>
+                <span>Sequential loading/unloading with memory cleanup between models. Verification step aborts if models missing.</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>📝 JSON Parsing:</strong>
+                <span>Enforced via format_instructions in prompt. Parser tries direct load, then finds first {...} region.</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>⏰ Timestamps:</strong>
+                <span>All output filenames include timestamps for versioning.</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>🎯 Serialization:</strong>
+                <span>Tables serialized as "ColumnName: value, ..." format for both embedding and prompt inclusion.</span>
+            </div>
+            
+            <div class="legend-item">
+                <strong>🔶 Setup 2 Difference:</strong>
+                <span>Only adds reranking step (4.5). All other steps identical but use reranked table order.</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
