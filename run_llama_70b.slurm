@@ -2,14 +2,14 @@
 #SBATCH --job-name=llama_70b_privacy_qa
 #SBATCH --output=/scratch/asing725/CSE336/privacy_qa/batch_results/llama_70b_%j.log
 #SBATCH --error=/scratch/asing725/CSE336/privacy_qa/batch_results/llama_70b_%j.err
-#SBATCH --partition=htc
+#SBATCH --partition=general
 #SBATCH --qos=public
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:a100:4
 #SBATCH --mem=110GB
-#SBATCH --time=4:00:00
+#SBATCH --time=7:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=asing725@asu.edu
 

@@ -1,3 +1,4 @@
 datasets/
 garbage/
 batch_results/
+.env
