@@ -2,3 +2,5 @@ datasets/
 garbage/
 batch_results/
 .env
+prompt-model-vertex-b5a67ad96374.json
+prompt-qwen-3-9adf83a178fb.json
